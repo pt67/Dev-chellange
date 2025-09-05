@@ -9,15 +9,49 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { GoogleGenAI, Type } from "@google/genai";
 
+// Define a type for our recipe object for better type safety
+type Recipe = {
+  recipeName: string;
+  ingredients: string[];
+  instructions: string[];
+  servingSize: string;
+  nutritionalInfo: {
+    calories: string;
+    protein: string;
+    carbohydrates: string;
+    fats: string;
+  };
+};
+
 const App = () => {
-  const [selectedImage, setSelectedImage] = React.useState(null);
+  // FIX: Explicitly type state for better type safety.
+  const [selectedImage, setSelectedImage] = React.useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = React.useState('');
-  const [recipes, setRecipes] = React.useState([]);
+  const [recipes, setRecipes] = React.useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState('');
+  
+  // State for saved recipes and view management
+  const [savedRecipes, setSavedRecipes] = React.useState<Recipe[]>([]);
+  const [view, setView] = React.useState<'generator' | 'saved'>('generator');
+  const [expandedRecipeIndex, setExpandedRecipeIndex] = React.useState<number | null>(null);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
+  // Load saved recipes from localStorage on initial render
+  React.useEffect(() => {
+    try {
+      const storedRecipes = localStorage.getItem('savedRecipes');
+      if (storedRecipes) {
+        setSavedRecipes(JSON.parse(storedRecipes));
+      }
+    } catch (err) {
+      console.error("Failed to parse saved recipes:", err);
+      // If parsing fails, clear the corrupted data
+      localStorage.removeItem('savedRecipes');
+    }
+  }, []);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       setSelectedImage(file);
       setPreviewUrl(URL.createObjectURL(file));
@@ -26,7 +60,9 @@ const App = () => {
     }
   };
 
-  const fileToBase64 = (file) => new Promise((resolve, reject) => {
+  // FIX: Add type annotations to ensure the function returns a Promise<string>.
+  // This resolves the TypeScript error where the result was inferred as `unknown`.
+  const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     // FIX: Cast reader.result to string before calling split, as it can be an ArrayBuffer.
@@ -115,67 +151,135 @@ const App = () => {
       setIsLoading(false);
     }
   };
+  
+  const saveRecipe = (recipeToSave: Recipe) => {
+    if (savedRecipes.some(r => r.recipeName === recipeToSave.recipeName)) {
+      return; // Avoid duplicates
+    }
+    const updatedRecipes = [...savedRecipes, recipeToSave];
+    setSavedRecipes(updatedRecipes);
+    localStorage.setItem('savedRecipes', JSON.stringify(updatedRecipes));
+  };
+  
+  const deleteRecipe = (indexToDelete: number) => {
+    const updatedRecipes = savedRecipes.filter((_, index) => index !== indexToDelete);
+    setSavedRecipes(updatedRecipes);
+    localStorage.setItem('savedRecipes', JSON.stringify(updatedRecipes));
+  };
+
+  const RecipeCard = ({ recipe, onSave, isSaved }: { recipe: Recipe, onSave?: () => void, isSaved?: boolean }) => (
+    <div className="recipe-card">
+      <h2>{recipe.recipeName}</h2>
+      
+      {recipe.servingSize && (
+        <>
+          <h3>Serving Size</h3>
+          <p>{recipe.servingSize}</p>
+        </>
+      )}
+
+      <h3>Ingredients</h3>
+      <ul>
+        {recipe.ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
+      </ul>
+      
+      <h3>Instructions</h3>
+      <ol>
+        {recipe.instructions.map((step, i) => <li key={i}>{step}</li>)}
+      </ol>
+
+      {recipe.nutritionalInfo && (
+        <>
+          <h3>Nutritional Information (estimated)</h3>
+          <div className="nutritional-info">
+            <span><strong>Calories:</strong> {recipe.nutritionalInfo.calories}</span>
+            <span><strong>Protein:</strong> {recipe.nutritionalInfo.protein}</span>
+            <span><strong>Carbs:</strong> {recipe.nutritionalInfo.carbohydrates}</span>
+            <span><strong>Fats:</strong> {recipe.nutritionalInfo.fats}</span>
+          </div>
+        </>
+      )}
+      {onSave && (
+         <button onClick={onSave} className="save-button" disabled={isSaved}>
+            {isSaved ? 'Saved' : 'Save Recipe'}
+          </button>
+      )}
+    </div>
+  );
+
 
   return (
     <div className="app-container">
       <header>
         <h1>Visual Recipe Assistant</h1>
         <p>Upload a photo of your ingredients and get instant recipe ideas!</p>
+        <div className="view-toggle">
+            <button onClick={() => setView('generator')} className={view === 'generator' ? 'active' : ''}>
+              Generate Recipes
+            </button>
+            <button onClick={() => setView('saved')} className={view === 'saved' ? 'active' : ''}>
+              Saved Recipes ({savedRecipes.length})
+            </button>
+        </div>
       </header>
 
-      <section className="uploader-section">
-        <label htmlFor="file-upload" className="file-input-label">
-          Choose an Image
-        </label>
-        <input id="file-upload" type="file" accept="image/*" onChange={handleImageChange} />
-        
-        {previewUrl && <img src={previewUrl} alt="Ingredients preview" className="image-preview" />}
+      {view === 'generator' && (
+        <>
+          <section className="uploader-section">
+            <label htmlFor="file-upload" className="file-input-label">
+              Choose an Image
+            </label>
+            <input id="file-upload" type="file" accept="image/*" onChange={handleImageChange} />
+            
+            {previewUrl && <img src={previewUrl} alt="Ingredients preview" className="image-preview" />}
 
-        <button onClick={generateRecipes} disabled={isLoading || !selectedImage} className="generate-button">
-          {isLoading ? 'Generating...' : 'Find Recipes'}
-        </button>
-      </section>
+            <button onClick={generateRecipes} disabled={isLoading || !selectedImage} className="generate-button">
+              {isLoading ? 'Generating...' : 'Find Recipes'}
+            </button>
+          </section>
 
-      {(isLoading || error || recipes.length > 0) && (
-        <section className="results-section">
-          <div className="status-container">
-            {isLoading && <div className="loader"></div>}
-            {error && <p className="error-message">{error}</p>}
-          </div>
+          {(isLoading || error || recipes.length > 0) && (
+            <section className="results-section">
+              <div className="status-container">
+                {isLoading && <div className="loader"></div>}
+                {error && <p className="error-message">{error}</p>}
+              </div>
 
-          {recipes.length > 0 && (
-            <div className="recipes-container">
-              {recipes.map((recipe, index) => (
-                <div key={index} className="recipe-card">
-                  <h2>{recipe.recipeName}</h2>
-                  
-                  {recipe.servingSize && (
-                    <>
-                      <h3>Serving Size</h3>
-                      <p>{recipe.servingSize}</p>
-                    </>
-                  )}
+              {recipes.length > 0 && (
+                <div className="recipes-container">
+                  {recipes.map((recipe, index) => {
+                    const isSaved = savedRecipes.some(r => r.recipeName === recipe.recipeName);
+                    return <RecipeCard key={index} recipe={recipe} onSave={() => saveRecipe(recipe)} isSaved={isSaved} />;
+                  })}
+                </div>
+              )}
+            </section>
+          )}
+        </>
+      )}
 
-                  <h3>Ingredients</h3>
-                  <ul>
-                    {recipe.ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
-                  </ul>
-                  
-                  <h3>Instructions</h3>
-                  <ol>
-                    {recipe.instructions.map((step, i) => <li key={i}>{step}</li>)}
-                  </ol>
-
-                  {recipe.nutritionalInfo && (
-                    <>
-                      <h3>Nutritional Information (estimated)</h3>
-                      <div className="nutritional-info">
-                        <span><strong>Calories:</strong> {recipe.nutritionalInfo.calories}</span>
-                        <span><strong>Protein:</strong> {recipe.nutritionalInfo.protein}</span>
-                        <span><strong>Carbs:</strong> {recipe.nutritionalInfo.carbohydrates}</span>
-                        <span><strong>Fats:</strong> {recipe.nutritionalInfo.fats}</span>
-                      </div>
-                    </>
+      {view === 'saved' && (
+        <section className="saved-recipes-section">
+          <h2>Your Saved Recipes</h2>
+          {savedRecipes.length === 0 ? (
+            <p className="empty-state-message">You haven't saved any recipes yet. Generate some and save your favorites!</p>
+          ) : (
+            <div className="saved-recipes-list">
+              {savedRecipes.map((recipe, index) => (
+                <div key={index} className="saved-recipe-item">
+                  <div className="saved-recipe-header">
+                    <span className="saved-recipe-title">{recipe.recipeName}</span>
+                    <div className="saved-recipe-actions">
+                      <button onClick={() => setExpandedRecipeIndex(expandedRecipeIndex === index ? null : index)}>
+                        {expandedRecipeIndex === index ? 'Hide Details' : 'View Details'}
+                      </button>
+                      <button onClick={() => deleteRecipe(index)} className="delete-button">Delete</button>
+                    </div>
+                  </div>
+                  {expandedRecipeIndex === index && (
+                    <div className="expanded-recipe-details">
+                      <RecipeCard recipe={recipe} />
+                    </div>
                   )}
                 </div>
               ))}

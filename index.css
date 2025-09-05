@@ -6,6 +6,10 @@
   --text-color: #34495e;
   --primary-accent: #27ae60;
   --primary-accent-hover: #229954;
+  --secondary-accent: #3498db;
+  --secondary-accent-hover: #2980b9;
+  --danger-color: #e74c3c;
+  --danger-color-hover: #c0392b;
   --border-color: #e0e0e0;
   --shadow-color: rgba(0, 0, 0, 0.1);
 }
@@ -52,6 +56,36 @@ header p {
   color: var(--text-color);
   margin-top: 8px;
 }
+
+.view-toggle {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.view-toggle button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: bold;
+  border: 2px solid var(--primary-accent);
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: transparent;
+  color: var(--primary-accent);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.view-toggle button:hover {
+  background-color: var(--primary-accent-hover);
+  color: white;
+}
+
+.view-toggle button.active {
+  background-color: var(--primary-accent);
+  color: white;
+}
+
 
 /* Uploader Section */
 .uploader-section {
@@ -207,4 +241,108 @@ input[type="file"] {
 
 .nutritional-info span {
   font-size: 0.95rem;
+}
+
+.save-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  background-color: var(--secondary-accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.save-button:hover {
+  background-color: var(--secondary-accent-hover);
+}
+
+.save-button:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+/* Saved Recipes Section */
+.saved-recipes-section h2 {
+  text-align: center;
+  color: var(--header-color);
+}
+
+.empty-state-message {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #7f8c8d;
+  background-color: var(--secondary-bg);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px var(--shadow-color);
+}
+
+.saved-recipes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.saved-recipe-item {
+  background-color: var(--secondary-bg);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  padding: 15px 20px;
+}
+
+.saved-recipe-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.saved-recipe-title {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: var(--header-color);
+}
+
+.saved-recipe-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.saved-recipe-actions button {
+  padding: 8px 15px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  background-color: var(--secondary-accent);
+  color: white;
+}
+
+.saved-recipe-actions button:hover {
+  background-color: var(--secondary-accent-hover);
+}
+
+.saved-recipe-actions .delete-button {
+  background-color: var(--danger-color);
+}
+
+.saved-recipe-actions .delete-button:hover {
+  background-color: var(--danger-color-hover);
+}
+
+.expanded-recipe-details {
+  margin-top: 20px;
+  border-top: 2px solid var(--border-color);
+  padding-top: 20px;
+}
+
+.expanded-recipe-details .recipe-card {
+  box-shadow: none;
+  padding: 0;
 }
