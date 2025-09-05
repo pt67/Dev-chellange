@@ -180,6 +180,12 @@ input[type="file"] {
   margin-bottom: 10px;
 }
 
+.recipe-card p {
+    margin-top: 0;
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
 .recipe-card ul, .recipe-card ol {
   padding-left: 20px;
 }
@@ -187,4 +193,18 @@ input[type="file"] {
 .recipe-card li {
   margin-bottom: 8px;
   line-height: 1.6;
+}
+
+.nutritional-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  background-color: var(--primary-bg);
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.nutritional-info span {
+  font-size: 0.95rem;
 }

@@ -56,7 +56,7 @@ const App = () => {
       };
 
       const textPart = {
-        text: `Based on the ingredients in this image, suggest up to 3 simple recipes. For each recipe, provide the recipe name, a list of ingredients with quantities, and step-by-step instructions.`,
+        text: `Based on the ingredients in this image, suggest up to 3 simple recipes. For each recipe, provide the recipe name, a list of ingredients with quantities, step-by-step instructions, the serving size, and estimated nutritional information (calories, protein, carbohydrates, and fats).`,
       };
       
       const response = await ai.models.generateContent({
@@ -83,8 +83,23 @@ const App = () => {
                   items: { type: Type.STRING },
                   description: 'Step-by-step cooking instructions.',
                 },
+                servingSize: {
+                  type: Type.STRING,
+                  description: 'The recommended serving size for the recipe.'
+                },
+                nutritionalInfo: {
+                  type: Type.OBJECT,
+                  description: 'Estimated nutritional information per serving.',
+                  properties: {
+                    calories: { type: Type.STRING },
+                    protein: { type: Type.STRING },
+                    carbohydrates: { type: Type.STRING },
+                    fats: { type: Type.STRING }
+                  },
+                  required: ['calories', 'protein', 'carbohydrates', 'fats']
+                }
               },
-              required: ['recipeName', 'ingredients', 'instructions'],
+              required: ['recipeName', 'ingredients', 'instructions', 'servingSize', 'nutritionalInfo'],
             },
           },
         },
@@ -133,14 +148,35 @@ const App = () => {
               {recipes.map((recipe, index) => (
                 <div key={index} className="recipe-card">
                   <h2>{recipe.recipeName}</h2>
+                  
+                  {recipe.servingSize && (
+                    <>
+                      <h3>Serving Size</h3>
+                      <p>{recipe.servingSize}</p>
+                    </>
+                  )}
+
                   <h3>Ingredients</h3>
                   <ul>
                     {recipe.ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
                   </ul>
+                  
                   <h3>Instructions</h3>
                   <ol>
                     {recipe.instructions.map((step, i) => <li key={i}>{step}</li>)}
                   </ol>
+
+                  {recipe.nutritionalInfo && (
+                    <>
+                      <h3>Nutritional Information (estimated)</h3>
+                      <div className="nutritional-info">
+                        <span><strong>Calories:</strong> {recipe.nutritionalInfo.calories}</span>
+                        <span><strong>Protein:</strong> {recipe.nutritionalInfo.protein}</span>
+                        <span><strong>Carbs:</strong> {recipe.nutritionalInfo.carbohydrates}</span>
+                        <span><strong>Fats:</strong> {recipe.nutritionalInfo.fats}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
